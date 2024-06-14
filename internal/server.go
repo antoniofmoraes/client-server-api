@@ -2,26 +2,34 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func Server() {
+func ServerInit() {
+	db := dbInit(sqlite.Open("currency.db"))
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /cotacao", getCurrenncyHandler)
+	mux.HandleFunc("/cotacao", func(w http.ResponseWriter, r *http.Request) {
+		getQuotationHandler(w, db)
+	})
 
 	http.ListenAndServe(":8080", mux)
 }
 
-func getCurrenncyHandler(w http.ResponseWriter, r *http.Request) {
+func getQuotationHandler(w http.ResponseWriter, db *gorm.DB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://httpbin.org/delay/5", nil)
-	// req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
+
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -53,9 +61,21 @@ func getCurrenncyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(resBytes)
-	w.WriteHeader(http.StatusOK)
+	quotationResponse := QuotationResponse{}
+	err = json.Unmarshal(resBytes, &quotationResponse)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	db.Create(&quotationResponse.Quotation)
+
+	quotationBytes, err := json.Marshal(&quotationResponse.Quotation)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+
+	w.Write(quotationBytes)
 }
 
 func timeoutError(w http.ResponseWriter, err error) {
@@ -65,4 +85,13 @@ func timeoutError(w http.ResponseWriter, err error) {
 
 func internalServerError(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func dbInit(dialector gorm.Dialector) *gorm.DB {
+	db, err := gorm.Open(dialector, &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+	db.AutoMigrate(&Quotation{})
+	return db
 }
