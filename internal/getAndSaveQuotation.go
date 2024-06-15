@@ -36,15 +36,19 @@ func GetAndSaveQuotation() {
 		logError(err)
 		return
 	}
-	if res.StatusCode != http.StatusOK {
-		logError(err)
-		return
-	}
 	defer res.Body.Close()
 
 	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		logError(err)
+		return
+	}
+	if res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusNotModified {
+			log.Println("Não houve alteração na cotação desde a última requisição...")
+			return
+		}
+		log.Printf("Erro %v: %v", res.StatusCode, string(resBytes))
 		return
 	}
 

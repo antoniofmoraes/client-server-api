@@ -3,11 +3,13 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
 	"gorm.io/gorm"
 )
 
@@ -57,6 +59,13 @@ func GetQuotationHandler(w http.ResponseWriter, db *gorm.DB) {
 
 	err = InsertQuotation(db, quotationResponse)
 	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) {
+			if errors.Is(sqliteErr.ExtendedCode, sqlite3.ErrConstraintUnique) {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
 		internalServerError(w, err)
 		return
 	}
