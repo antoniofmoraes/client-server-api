@@ -20,14 +20,14 @@ Baixe as dependências:
 go mod tidy
 ```
 Execute os dois sistemas:
- - server.go
+#### server.go
 ```
 go run cmd/server/server.go
 ```
- - client.go
+#### client.go
 ```
 go run cmd/client/client.go <arg1>
 ```
-	- **arg1:** valor em inteiro que define tempo de intervalo entre as requisições em segundos
-		- Utilize 0 ou menos para fazer apenas uma requisição
-		- Caso não seja informado, o valor será definido para 60 segundos
+- **arg1:** valor em inteiro que define tempo de intervalo entre as requisições em segundos
+	- Utilize 0 ou menos caso queira fazer apenas uma requisição
+	- Caso não seja informado, o valor será definido para padrão de 60 segundos
