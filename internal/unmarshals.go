@@ -5,8 +5,6 @@ import (
 	"strconv"
 )
 
-type Float32 float32
-
 func (f *Float32) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)

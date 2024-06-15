@@ -8,23 +8,10 @@ import (
 	"net/http"
 	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func ServerInit() {
-	db := dbInit(sqlite.Open("currency.db"))
-
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/cotacao", func(w http.ResponseWriter, r *http.Request) {
-		getQuotationHandler(w, db)
-	})
-
-	http.ListenAndServe(":8080", mux)
-}
-
-func getQuotationHandler(w http.ResponseWriter, db *gorm.DB) {
+func GetQuotationHandler(w http.ResponseWriter, db *gorm.DB) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
@@ -67,7 +54,12 @@ func getQuotationHandler(w http.ResponseWriter, db *gorm.DB) {
 		internalServerError(w, err)
 		return
 	}
-	db.Create(&quotationResponse.Quotation)
+
+	err = InsertQuotation(db, quotationResponse)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 
 	quotationBytes, err := json.Marshal(&quotationResponse.Quotation)
 	if err != nil {
@@ -85,13 +77,4 @@ func timeoutError(w http.ResponseWriter, err error) {
 
 func internalServerError(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
-}
-
-func dbInit(dialector gorm.Dialector) *gorm.DB {
-	db, err := gorm.Open(dialector, &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	db.AutoMigrate(&Quotation{})
-	return db
 }
