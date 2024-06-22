@@ -12,7 +12,7 @@ Cliente, que faz constantemente requições para o endpoint **/cotacao** e salva
 ## Instruções para execução
 Clone o projeto e entre na pasta raiz:
 ```
-git clone https://github.com/usuario/repo.git
+git clone https://github.com/antoniofmoraes/client-server-api.git
 cd repo
 ```
 Baixe as dependências:
